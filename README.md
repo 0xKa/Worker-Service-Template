@@ -90,7 +90,7 @@ dotnet publish -c Release -o ./publish --self-contained
 sc create "YourServiceName" binPath="C:\path\to\publish\Worker-Service-Template.exe"
 ```
 
-#### Setting service description:
+#### Setting service description
 
 ```powershell
 sc description "YourServiceName" "Your service description"
