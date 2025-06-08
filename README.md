@@ -21,17 +21,29 @@ A generic .NET 9 worker service template designed for creating background servic
 
 ### 1. Clone or Initialize your own Worker Service
 
-```bash
+```powershell
 git clone <your-repo-url>
 cd Worker-Service-Template
 ```
 
 or
 
-```bash
+```powershell
 dotnet new worker -n Worker-Service-Template
 cd Worker-Service-Template
 ```
+
+### 2. Install Required Packages
+
+```powershell
+dotnet add package Microsoft.Extensions.Hosting.WindowsServices
+```
+
+### 3. Configure the Worker Service
+
+Follow this deatiled guide to set up the worker service template:
+
+> [Worker Service Configuration Guide](./FullGuide.md)
 
 ## Logging
 
@@ -78,13 +90,64 @@ dotnet publish -c Release -o ./publish --self-contained
 sc create "YourServiceName" binPath="C:\path\to\publish\Worker-Service-Template.exe"
 ```
 
+#### Setting service description:
+
 ```powershell
 sc description "YourServiceName" "Your service description"
 ```
 
+---
+
+### Miscillaneous Commands
+
+#### 🔍 1. Check Service Status
+
 ```powershell
-sc start "YourServiceName"
+sc query MyWorkerService
 ```
+
+#### ▶️ 2. Start the Service
+
+```powershell
+sc start MyWorkerService
+```
+
+Or via `services.msc`.
+
+---
+
+#### ❌ 3. Stop and Delete the Service
+
+```powershell
+sc stop MyWorkerService
+sc delete MyWorkerService
+```
+
+---
+
+#### 🔁 4. Reinstall After Code Changes
+
+1. Stop and delete the service:s
+
+2. Re-publish:
+
+   ```powershell
+   dotnet publish -c Release -o ./Publish
+   ```
+
+   > Make sure to run this from the project folder (where the `.csproj` file is located).
+
+3. Re-create the service:
+
+   ```powershell
+   sc create MyWorkerService binPath= "C:\Path\To\Publish\MyWorkerService.exe"
+   ```
+
+4. Start it:
+
+   ```powershell
+   sc start MyWorkerService
+   ```
 
 ---
 
