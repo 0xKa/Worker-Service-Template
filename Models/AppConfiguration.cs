@@ -4,6 +4,7 @@ namespace WorkerServiceTemplate.Models
     {
         public DirectoryConfig Directories { get; set; } = new();
         public FileConfig Files { get; set; } = new();
+        public CustomPathsConfig CustomPaths { get; set; } = new();
     }
 
     public class DirectoryConfig
@@ -25,4 +26,13 @@ namespace WorkerServiceTemplate.Models
         public string DatabaseFile { get; set; } = "database.sqlite";
     }
 
+    public class CustomPathsConfig
+    {
+        // These paths can be used to override the default paths defined in FileConfig
+        //can be set to null if not used
+        public string? ApplicationLogPath { get; set; }
+        public string? ErrorLogPath { get; set; }
+        public string? DatabaseFilePath { get; set; }
+        public string? ConfigFilePath { get; set; }
+    }
 }

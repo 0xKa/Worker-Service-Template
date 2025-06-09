@@ -57,7 +57,89 @@ internal class Utilities
     }
 
     /// <summary>
-    /// Gets a specific directory path from configuration
+    /// Gets a specific file path from configuration, supporting both relative and absolute paths
+    /// </summary>
+    public static string GetConfiguredFilePath(string fileKey, string? directoryKey = null)
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(fileKey))
+                return Path.Combine(GetProjectRootDirectory(), "default.log");
+
+            var config = GetConfiguration();
+            if (config == null)
+                return Path.Combine(GetProjectRootDirectory(), "default.log");
+
+            // First check for custom full path in CustomPaths section
+            if (config.CustomPaths != null)
+            {
+                var customPathProp = typeof(CustomPathsConfig).GetProperty($"{fileKey}Path");
+                if (customPathProp != null)
+                {
+                    string? customPath = customPathProp.GetValue(config.CustomPaths)?.ToString();
+                    if (!string.IsNullOrEmpty(customPath))
+                    {
+                        // If it's an absolute path, use it as-is
+                        if (Path.IsPathRooted(customPath))
+                        {
+                            // Ensure directory exists for absolute paths
+                            string? directory = Path.GetDirectoryName(customPath);
+                            if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
+                            {
+                                Directory.CreateDirectory(directory);
+                            }
+                            return customPath;
+                        }
+                        // If it's relative, combine with project root
+                        else
+                        {
+                            string fullPath = Path.Combine(GetProjectRootDirectory(), customPath);
+                            string? directory = Path.GetDirectoryName(fullPath);
+                            if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
+                            {
+                                Directory.CreateDirectory(directory);
+                            }
+                            return fullPath;
+                        }
+                    }
+                }
+            }
+
+            // Fallback to original logic if no custom path is specified
+            if (config.Files != null)
+            {
+                var fileProp = typeof(FileConfig).GetProperty(fileKey);
+                if (fileProp != null)
+                {
+                    string? fileName = fileProp.GetValue(config.Files)?.ToString();
+                    if (!string.IsNullOrEmpty(fileName))
+                    {
+                        if (!string.IsNullOrEmpty(directoryKey))
+                        {
+                            string directory = GetConfiguredDirectory(directoryKey);
+                            return Path.Combine(directory, fileName);
+                        }
+                        else
+                        {
+                            return Path.Combine(GetProjectRootDirectory(), fileName);
+                        }
+                    }
+                }
+            }
+
+            // Return default file path instead of throwing
+            return Path.Combine(GetProjectRootDirectory(), "default.log");
+        }
+        catch (Exception ex)
+        {
+            // Log the error and return a safe default
+            SafeLog($"Error getting configured file path '{fileKey}': {ex.Message}");
+            return Path.Combine(GetProjectRootDirectory(), "default.log");
+        }
+    }
+
+    /// <summary>
+    /// Gets a specific directory path from configuration, supporting both relative and absolute paths
     /// </summary>
     public static string GetConfiguredDirectory(string directoryKey)
     {
@@ -77,7 +159,18 @@ internal class Utilities
                 string? dirName = prop.GetValue(config.Directories)?.ToString();
                 if (!string.IsNullOrEmpty(dirName))
                 {
-                    return CreateDirectoryWithinProject(dirName);
+                    // If it's an absolute path, use it as-is
+                    if (Path.IsPathRooted(dirName))
+                    {
+                        if (!Directory.Exists(dirName))
+                            Directory.CreateDirectory(dirName);
+                        return dirName;
+                    }
+                    // If it's relative, combine with project root
+                    else
+                    {
+                        return CreateDirectoryWithinProject(dirName);
+                    }
                 }
             }
 
@@ -89,50 +182,6 @@ internal class Utilities
             // Log the error and return a safe default
             SafeLog($"Error getting configured directory '{directoryKey}': {ex.Message}");
             return GetProjectRootDirectory();
-        }
-    }
-
-    /// <summary>
-    /// Gets a specific file path from configuration
-    /// </summary>
-    public static string GetConfiguredFilePath(string fileKey, string? directoryKey = null)
-    {
-        try
-        {
-            if (string.IsNullOrWhiteSpace(fileKey))
-                return Path.Combine(GetProjectRootDirectory(), "default.log");
-
-            var config = GetConfiguration();
-            if (config?.Files == null)
-                return Path.Combine(GetProjectRootDirectory(), "default.log");
-
-            var fileProp = typeof(FileConfig).GetProperty(fileKey);
-
-            if (fileProp != null)
-            {
-                string? fileName = fileProp.GetValue(config.Files)?.ToString();
-                if (!string.IsNullOrEmpty(fileName))
-                {
-                    if (!string.IsNullOrEmpty(directoryKey))
-                    {
-                        string directory = GetConfiguredDirectory(directoryKey);
-                        return Path.Combine(directory, fileName);
-                    }
-                    else
-                    {
-                        return Path.Combine(GetProjectRootDirectory(), fileName);
-                    }
-                }
-            }
-
-            // Return default file path instead of throwing
-            return Path.Combine(GetProjectRootDirectory(), "default.log");
-        }
-        catch (Exception ex)
-        {
-            // Log the error and return a safe default
-            SafeLog($"Error getting configured file path '{fileKey}': {ex.Message}");
-            return Path.Combine(GetProjectRootDirectory(), "default.log");
         }
     }
 
