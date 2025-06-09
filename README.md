@@ -95,6 +95,7 @@ sc create "YourServiceName" binPath="C:\path\to\publish\Worker-Service-Template.
 ```powershell
 sc description "YourServiceName" "Your service description"
 ```
+
 ```powershell
 sc config FileMonitoringService DisplayName="File Monitoring Service"
 ```
