@@ -9,5 +9,11 @@ builder.Services.Configure<AppConfiguration>(
 
 builder.Services.AddHostedService<Worker>();
 
+// Enable Windows Service support
+builder.Services.AddWindowsService(options =>
+{
+    options.ServiceName = "TemplateService";
+});
+
 var host = builder.Build();
 host.Run();
