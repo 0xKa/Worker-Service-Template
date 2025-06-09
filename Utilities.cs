@@ -2,10 +2,11 @@ using Microsoft.Extensions.Options;
 using WorkerServiceTemplate.Models;
 
 namespace WorkerServiceTemplate;
+
 internal class Utilities
 {
     private static IServiceProvider? _serviceProvider;
-    
+
     /// <summary>
     /// Initialize utilities with service provider for configuration access
     /// </summary>
@@ -70,7 +71,7 @@ internal class Utilities
                 return GetProjectRootDirectory();
 
             var prop = typeof(DirectoryConfig).GetProperty(directoryKey);
-            
+
             if (prop != null)
             {
                 string? dirName = prop.GetValue(config.Directories)?.ToString();
@@ -79,7 +80,7 @@ internal class Utilities
                     return CreateDirectoryWithinProject(dirName);
                 }
             }
-            
+
             // Return project root as fallback instead of throwing
             return GetProjectRootDirectory();
         }
@@ -106,7 +107,7 @@ internal class Utilities
                 return Path.Combine(GetProjectRootDirectory(), "default.log");
 
             var fileProp = typeof(FileConfig).GetProperty(fileKey);
-            
+
             if (fileProp != null)
             {
                 string? fileName = fileProp.GetValue(config.Files)?.ToString();
@@ -123,7 +124,7 @@ internal class Utilities
                     }
                 }
             }
-            
+
             // Return default file path instead of throwing
             return Path.Combine(GetProjectRootDirectory(), "default.log");
         }
@@ -136,6 +137,54 @@ internal class Utilities
     }
 
     /// <summary>
+    /// Creates a directory inside another directory and returns the full path
+    /// </summary>
+    /// <param name="newDirName">Name of the new directory to create</param>
+    /// <param name="baseDirName">Name or path of the base directory</param>
+    /// <returns>Full path to the created directory</returns>
+    public static string CreateDirectoryInside(string newDirName, string baseDirName)
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(newDirName))
+                throw new ArgumentException("New directory name cannot be null or empty", nameof(newDirName));
+
+            if (string.IsNullOrWhiteSpace(baseDirName))
+                throw new ArgumentException("Base directory name cannot be null or empty", nameof(baseDirName));
+
+            // If baseDirName is not a full path, combine it with project root
+            string baseDirectory = Path.IsPathRooted(baseDirName)
+                ? baseDirName
+                : Path.Combine(GetProjectRootDirectory(), baseDirName);
+
+            // Ensure base directory exists
+            if (!Directory.Exists(baseDirectory))
+            {
+                Directory.CreateDirectory(baseDirectory);
+                SafeLog($"Created base directory: {baseDirectory}");
+            }
+
+            // Create the new directory inside the base directory
+            string newDirectoryPath = Path.Combine(baseDirectory, newDirName);
+
+            if (!Directory.Exists(newDirectoryPath))
+            {
+                Directory.CreateDirectory(newDirectoryPath);
+                SafeLog($"Created directory: {newDirectoryPath}");
+            }
+
+            return newDirectoryPath;
+        }
+        catch (Exception ex)
+        {
+            SafeLog($"Error creating directory '{newDirName}' inside '{baseDirName}': {ex.Message}");
+            // Return a fallback path
+            return Path.Combine(GetProjectRootDirectory(), newDirName);
+        }
+    }
+
+
+    /// <summary>
     /// Gets configuration from dependency injection
     /// </summary>
     private static AppConfiguration? GetConfiguration()
@@ -144,7 +193,7 @@ internal class Utilities
         {
             if (_serviceProvider == null)
                 return null;
-                
+
             var options = _serviceProvider.GetRequiredService<IOptions<AppConfiguration>>();
             return options?.Value;
         }
@@ -204,7 +253,7 @@ internal class Utilities
         try
         {
             string logMessage = $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] UTILITIES ERROR: {message}";
-            
+
             if (Environment.UserInteractive)
                 Console.WriteLine(logMessage);
             else

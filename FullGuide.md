@@ -188,6 +188,7 @@ using Microsoft.Extensions.Options;
 using WorkerServiceTemplate.Models;
 
 namespace WorkerServiceTemplate;
+
 internal class Utilities
 {
     private static IServiceProvider? _serviceProvider;
@@ -320,6 +321,54 @@ internal class Utilities
             return Path.Combine(GetProjectRootDirectory(), "default.log");
         }
     }
+
+    /// <summary>
+    /// Creates a directory inside another directory and returns the full path
+    /// </summary>
+    /// <param name="newDirName">Name of the new directory to create</param>
+    /// <param name="baseDirName">Name or path of the base directory</param>
+    /// <returns>Full path to the created directory</returns>
+    public static string CreateDirectoryInside(string newDirName, string baseDirName)
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(newDirName))
+                throw new ArgumentException("New directory name cannot be null or empty", nameof(newDirName));
+
+            if (string.IsNullOrWhiteSpace(baseDirName))
+                throw new ArgumentException("Base directory name cannot be null or empty", nameof(baseDirName));
+
+            // If baseDirName is not a full path, combine it with project root
+            string baseDirectory = Path.IsPathRooted(baseDirName)
+                ? baseDirName
+                : Path.Combine(GetProjectRootDirectory(), baseDirName);
+
+            // Ensure base directory exists
+            if (!Directory.Exists(baseDirectory))
+            {
+                Directory.CreateDirectory(baseDirectory);
+                SafeLog($"Created base directory: {baseDirectory}");
+            }
+
+            // Create the new directory inside the base directory
+            string newDirectoryPath = Path.Combine(baseDirectory, newDirName);
+
+            if (!Directory.Exists(newDirectoryPath))
+            {
+                Directory.CreateDirectory(newDirectoryPath);
+                SafeLog($"Created directory: {newDirectoryPath}");
+            }
+
+            return newDirectoryPath;
+        }
+        catch (Exception ex)
+        {
+            SafeLog($"Error creating directory '{newDirName}' inside '{baseDirName}': {ex.Message}");
+            // Return a fallback path
+            return Path.Combine(GetProjectRootDirectory(), newDirName);
+        }
+    }
+
 
     /// <summary>
     /// Gets configuration from dependency injection
