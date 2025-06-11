@@ -87,17 +87,27 @@ dotnet publish -c Release -o ./publish --self-contained
 ### Installing as a Windows Service
 
 ```powershell
-sc create "YourServiceName" binPath="C:\path\to\publish\Worker-Service-Template.exe" DisplayName="The Service Name" start=auto
+sc create "YourServiceName"
+   binPath="C:\path\to\publish\Worker-Service-Template.exe"
+   DisplayName="The Service Name" start=auto
 ```
 
-#### Setting service description and changing display name
+#### Setting service description 
 
 ```powershell
 sc description "YourServiceName" "Your service description"
 ```
 
+#### Changing display name
+
 ```powershell
 sc config FileMonitoringService DisplayName="File Monitoring Service"
+```
+
+#### Add Dependencies
+
+```powershell
+sc config YourServiceName depend= MSSQLSERVER/AnotherServiceName
 ```
 
 ---
