@@ -126,13 +126,27 @@ using static WorkerServiceTemplate.Utilities;
 
 namespace WorkerServiceTemplate;
 
+
+public struct Files
+{
+    public static string appLog = string.Empty; // log service lifecycle 
+    public static string errorLog = string.Empty;
+
+
+    public static void InitializeFields(IOptions<AppConfiguration> config)
+    {
+        appLog = GetConfiguredFilePath("ApplicationLog", config.Value.Directories.Logs);
+        errorLog = GetConfiguredFilePath("ErrorLog", config.Value.Directories.Logs);
+
+    }
+
+}
+
 public class Worker : BackgroundService
 {
     private readonly ILogger<Worker> _logger;
-    private readonly string _logFilePath;
-    private readonly string _CustomLogFilePath;
 
-    public const string ServiceInternalName = "TempWorkerService";
+    public const string ServiceInternalName = "DtabaseBackupService";
 
     public Worker(ILogger<Worker> logger, IOptions<AppConfiguration> config, IServiceProvider serviceProvider)
     {
@@ -140,15 +154,11 @@ public class Worker : BackgroundService
 
         // Initialize utilities with service provider
         Initialize(serviceProvider);
+        Files.InitializeFields(config);
 
-        _logFilePath = GetConfiguredFilePath("ApplicationLog", config.Value.Directories.Logs);
-        LogMessage($"Service '{ServiceInternalName}' initialized. Log file: {_logFilePath}", _logFilePath);
+        // Example: Log service start
+        LogMessage($"Service '{ServiceInternalName}' initialized with configuration", Files.appLog);
 
-        // Optionally, you can also log to a custom path if specified in the configuration
-        _CustomLogFilePath = config.Value.CustomPaths.DatabaseFilePath ?? string.Empty;
-        LogMessage($"Custom log file path configured: {_CustomLogFilePath}", _CustomLogFilePath);
-
-        // LogMessage("This is a sample error message, in a temp dir", GetConfiguredFilePath("ErrorLog", config.Value.Directories.Temp));
     }
 
     public override Task StartAsync(CancellationToken cancellationToken)
@@ -157,21 +167,21 @@ public class Worker : BackgroundService
             "console mode (UserInteractive = true)" :
             "Windows Service (UserInteractive = false)";
 
-        LogMessage($"Service '{ServiceInternalName}' starting in {runMode}", _logFilePath);
+        LogMessage($"Service '{ServiceInternalName}' starting in {runMode}", Files.appLog);
 
         return base.StartAsync(cancellationToken);
     }
 
     public override Task StopAsync(CancellationToken cancellationToken)
     {
-        LogMessage($"Service '{ServiceInternalName}' stopping...", _logFilePath);
+        LogMessage($"Service '{ServiceInternalName}' stopping...", Files.appLog);
 
         return base.StopAsync(cancellationToken);
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        LogMessage($"Service '{ServiceInternalName}' execution started.", _logFilePath);
+        // LogMessage($"Service '{ServiceInternalName}' execution started.", Files.appLog);
 
         while (!stoppingToken.IsCancellationRequested)
         {
@@ -188,12 +198,12 @@ public class Worker : BackgroundService
             }
             catch (OperationCanceledException)
             {
-                LogMessage("Worker execution cancelled", _logFilePath);
+                LogMessage("Worker execution cancelled", Files.appLog);
                 break;
             }
             catch (Exception ex)
             {
-                LogMessage($"Error in worker execution: {ex.Message}", _logFilePath);
+                LogMessage($"Error in worker execution: {ex.Message}", Files.appLog);
                 _logger.LogError(ex, "Worker execution failed");
 
                 // Wait before retrying to avoid rapid error loops
@@ -201,7 +211,7 @@ public class Worker : BackgroundService
             }
         }
 
-        LogMessage($"Service '{ServiceInternalName}' execution ended", _logFilePath);
+        // LogMessage($"Service '{ServiceInternalName}' execution ended", Files.appLog);
     }
 }
 ```
