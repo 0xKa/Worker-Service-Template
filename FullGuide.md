@@ -14,20 +14,28 @@ Exmaple Template:
       "Microsoft.Hosting.Lifetime": "Information"
     }
   },
-  "Directories": {
-    "Logs": "Logs",
-    "Data": "Data",
-    "Config": "Config",
-    "Temp": "Temp",
-    "Backups": "Backups",
-    "Reports": "Reports",
-    "Plugins": "Plugins"
-  },
-  "Files": {
-    "ApplicationLog": "app.log",
-    "ErrorLog": "errors.log",
-    "ConfigFile": "appsettings.json",
-    "DatabaseFile": "database.sqlite"
+  "AppConfiguration": {
+    "Directories": {
+      "Logs": "Logs",
+      "Data": "Data",
+      "Config": "Config",
+      "Temp": "Temp",
+      "Backups": "Backups",
+      "Reports": "Reports",
+      "Plugins": "Plugins"
+    },
+    "Files": {
+      "ConfigFile": "appsettings.json",
+      "ApplicationLog": "app.log",
+      "ErrorLog": "errors.log",
+      "DatabaseFile": "database.sqlite"
+    },
+    "CustomPaths": {
+      "ApplicationLogPath": null,
+      "ErrorLogPath": null,
+      "DatabaseFilePath": "F:\\db\\db.log",
+      "ConfigFilePath": null
+    }
   }
 }
 ```
@@ -45,6 +53,7 @@ namespace WorkerServiceTemplate.Models
     {
         public DirectoryConfig Directories { get; set; } = new();
         public FileConfig Files { get; set; } = new();
+        public CustomPathsConfig CustomPaths { get; set; } = new();
     }
 
     public class DirectoryConfig
@@ -66,6 +75,15 @@ namespace WorkerServiceTemplate.Models
         public string DatabaseFile { get; set; } = "database.sqlite";
     }
 
+    public class CustomPathsConfig
+    {
+        // These paths can be used to override the default paths defined in FileConfig
+        //can be set to null if not used
+        public string? ApplicationLogPath { get; set; }
+        public string? ErrorLogPath { get; set; }
+        public string? DatabaseFilePath { get; set; }
+        public string? ConfigFilePath { get; set; }
+    }
 }
 ```
 
@@ -112,6 +130,7 @@ public class Worker : BackgroundService
 {
     private readonly ILogger<Worker> _logger;
     private readonly string _logFilePath;
+    private readonly string _CustomLogFilePath;
 
     public const string ServiceInternalName = "TempWorkerService";
 
@@ -124,7 +143,12 @@ public class Worker : BackgroundService
 
         _logFilePath = GetConfiguredFilePath("ApplicationLog", config.Value.Directories.Logs);
         LogMessage($"Service '{ServiceInternalName}' initialized. Log file: {_logFilePath}", _logFilePath);
-        LogMessage("This is a sample error message, in a temp dir", GetConfiguredFilePath("ErrorLog", config.Value.Directories.Temp));
+
+        // Optionally, you can also log to a custom path if specified in the configuration
+        _CustomLogFilePath = config.Value.CustomPaths.DatabaseFilePath ?? string.Empty;
+        LogMessage($"Custom log file path configured: {_CustomLogFilePath}", _CustomLogFilePath);
+
+        // LogMessage("This is a sample error message, in a temp dir", GetConfiguredFilePath("ErrorLog", config.Value.Directories.Temp));
     }
 
     public override Task StartAsync(CancellationToken cancellationToken)
@@ -180,7 +204,6 @@ public class Worker : BackgroundService
         LogMessage($"Service '{ServiceInternalName}' execution ended", _logFilePath);
     }
 }
-
 ```
 
 ## 5. Add `Utilities` Class
